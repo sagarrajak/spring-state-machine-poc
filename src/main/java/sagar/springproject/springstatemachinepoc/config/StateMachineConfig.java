@@ -2,6 +2,9 @@ package sagar.springproject.springstatemachinepoc.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.statemachine.action.Action;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.StateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineConfigurationConfigurer;
@@ -13,6 +16,9 @@ import sagar.springproject.springstatemachinepoc.domain.PaymentEvent;
 import sagar.springproject.springstatemachinepoc.domain.PaymentState;
 
 import java.util.EnumSet;
+import java.util.Random;
+
+import static sagar.springproject.springstatemachinepoc.services.PaymentServiceImpl.PAYMENT_ID_HEADER;
 
 @Slf4j
 @EnableStateMachineFactory
@@ -33,6 +39,7 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
     public void configure(StateMachineTransitionConfigurer<PaymentState, PaymentEvent> transitions) throws Exception {
         transitions
                 .withExternal().source(PaymentState.NEW).target(PaymentState.NEW).event(PaymentEvent.PRE_AUTHORIZE)
+                .action(getPaymentAction())
                 .and()
                 .withExternal().source(PaymentState.NEW).target(PaymentState.PRE_AUTH).event(PaymentEvent.PRE_AUTH_APPROVED)
                 .and()
@@ -52,5 +59,21 @@ public class StateMachineConfig extends StateMachineConfigurerAdapter<PaymentSta
             }
         };
         config.withConfiguration().listener(adapter);
+    }
+
+    public Action<PaymentState, PaymentEvent> getPaymentAction() {
+        return stateContext -> {
+            System.out.println("Pre Auth was called");
+            if(new Random().nextInt(10) > 8) {
+                System.out.println("Pre Auth approved!");
+                Message<PaymentEvent> message = MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_APPROVED).setHeader(PAYMENT_ID_HEADER, stateContext.getMessageHeader(PAYMENT_ID_HEADER)).build();
+                stateContext.getStateMachine().sendEvent(message);
+            }
+            else {
+                System.out.println("Pre Auth error!");
+                Message<PaymentEvent> message = MessageBuilder.withPayload(PaymentEvent.PRE_AUTH_DECLINED).setHeader(PAYMENT_ID_HEADER, stateContext.getMessageHeader(PAYMENT_ID_HEADER)).build();
+                stateContext.getStateMachine().sendEvent(message);
+            }
+        };
     }
 }

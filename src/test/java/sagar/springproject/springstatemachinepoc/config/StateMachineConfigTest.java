@@ -8,7 +8,6 @@ import org.springframework.statemachine.config.StateMachineFactory;
 import sagar.springproject.springstatemachinepoc.domain.PaymentEvent;
 import sagar.springproject.springstatemachinepoc.domain.PaymentState;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class StateMachineConfigTest {
@@ -19,15 +18,9 @@ class StateMachineConfigTest {
     void tesStateMachine() {
         StateMachine<PaymentState, PaymentEvent> sm = smf.getStateMachine();
         sm.start();
-
         System.out.println(sm.getState().toString());
-
         sm.sendEvent(PaymentEvent.PRE_AUTHORIZE);
-
-        System.out.println(sm.getState().toString());
-
-        sm.sendEvent(PaymentEvent.PRE_AUTH_APPROVED);
-
+        System.out.println("Should be pre-auth approved or pre-auth error!");
         System.out.println(sm.getState().toString());
     }
 }
